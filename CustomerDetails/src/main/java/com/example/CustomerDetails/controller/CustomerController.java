@@ -43,22 +43,27 @@ public class CustomerController {
         String msg = "This method is used to getting all the Customers";
         createFile(msg);
         return service.getCustomers();
-
     }
+
     @GetMapping("/customerById/{id}")
-    public Customer findById(@PathVariable("id") String idString) {
+    public ResponseEntity<Object> findById(@PathVariable("id") String idString) {
         String msg = "This method is used to get the customer by id";
         createFile(msg);
         Customer customer = new Customer();
         try {
-            int ids = Integer.parseInt(idString);
-            customer = service.getCustomerById(ids);
-            customer.setMsg("valid id format");
+            int ids = Integer.parseInt(idString);//check format of id
+            Optional<Customer> optionalCustomer = repository.findById(ids);
+            if (!optionalCustomer.isPresent()) {//check given id availability
+                return ResponseEntity.badRequest().body("Customer ID does not exist.");
+            } else {
+                customer = service.getCustomerById(ids);
+            }
         } catch (NumberFormatException e) {
-            customer.setMsg("Invalid id format");
+            return ResponseEntity.badRequest().body("Invalid id format...Accept only integer");
         }
-        return customer;
+        return ResponseEntity.ok(customer);
     }
+
 
     @GetMapping("/customerByName/{name}")
     public Customer getCustomerByName(@PathVariable String name) {
@@ -86,7 +91,7 @@ public class CustomerController {
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
         HttpEntity<String> entity = new HttpEntity<String>(headers);
-        String msg = "This method is used to get the accounts from AccountMs";
+        String msg = "This method is used to get the accounts from AccountMs using restTemplate";
         createFile(msg);
         return restTemplate.exchange("http://localhost:9191/accounts", HttpMethod.GET, entity, String.class).getBody();
     }
@@ -102,13 +107,26 @@ public class CustomerController {
 
         Optional<Customer> customer = repository.findById(id);
         if (!customer.isPresent()) {
-            return ("Entered customer is not available");
+            return ("Customer ID does not exist");
         } else {
             restTemplate.exchange("http://localhost:9191/deleteByCustomerId/" + id, HttpMethod.DELETE, entity, String.class).getBody();
             repository.deleteById(id);
             return ("Customer deleted successfully  " + id);
         }
     }
+
+    @GetMapping("/template/customerById/{id}")
+    public String getCustomerById(@PathVariable int id) {
+       //this method is used to check the existing customer by using customer id from AccountMS
+        Optional<Customer> accountOptional =repository.findById(id);
+        if (!accountOptional.isPresent()) {
+            return ("no");
+        }
+        else {
+            return ("yes");
+        }
+    }
+
     private void createFile(String msg) {
         {
             try {
@@ -153,4 +171,5 @@ public class CustomerController {
         }
         return (fileRead);
     }
+
 }

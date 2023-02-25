@@ -25,6 +25,6 @@ public class Customer {
     private String aadhar;
     private Date dob;
     private String gender;
-    private String msg;
+
 }
 
