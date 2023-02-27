@@ -77,12 +77,21 @@ public class CustomerController {
         return ResponseEntity.ok(customer);
     }
 
-
     @GetMapping("/customerByName/{name}")
-    public Customer getCustomerByName(@PathVariable String name) {
+    public ResponseEntity<Object> getCustomerByName(@PathVariable String name) {
         String msg = "This method is used to get the customer by name";
         createFile(msg);
-        return service.getCustomerByName(name);
+        if (!name.matches("[a-zA-Z]+")) {//check whether the entered search query is valid string or not
+            return ResponseEntity.badRequest().body("Invalid search query. Please enter a valid string.");
+        }
+        Customer customer = new Customer();
+        Optional<Customer> optionalCustomer = Optional.ofNullable(service.getCustomerByName(name));
+        if (!optionalCustomer.isPresent()) {//check given name availability
+            return ResponseEntity.badRequest().body("Customer Name does not exist.");
+        } else {
+            customer = service.getCustomerByName(name);
+        }
+        return ResponseEntity.ok(customer);
     }
 
     @GetMapping("/starting-with/{startingLetter}")
@@ -93,10 +102,22 @@ public class CustomerController {
     }
 
     @PutMapping("/update")
-    public Customer updateCustomer(@RequestBody Customer customer) {
-        String msg = "This method is used to Update the existing customer";
+    public ResponseEntity<?> updateCustomer(@Valid @RequestBody Customer customer, BindingResult result){
+        String msg = "This method is used to Update the existing customer" +
+                     "Before updating the customer it will Validate the request body " +
+                     "If captured any input validation errors,send a response with the error messages in the response body";
         createFile(msg);
-        return service.updateCustomer(customer);
+        if (result.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            List<FieldError> fieldErrors = result.getFieldErrors();
+            for (FieldError fieldError : fieldErrors) {
+                errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+        }
+
+        Customer updatedCustomer =service.updateCustomer(customer);
+        return ResponseEntity.ok(customer);
     }
 
     @RequestMapping("/template/accounts")
@@ -184,5 +205,4 @@ public class CustomerController {
         }
         return (fileRead);
     }
-
 }

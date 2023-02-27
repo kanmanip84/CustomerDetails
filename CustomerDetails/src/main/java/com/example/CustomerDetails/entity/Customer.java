@@ -22,7 +22,6 @@ public class Customer {
     private String name;
     @NotBlank(message = "Phone number is required")
     @Pattern(regexp = "\\d{10}", message = "phone no should be in 10 digit ")
-
     private String phoneNumber;
     @NotBlank(message = "address1 is required")
     private String address1;
