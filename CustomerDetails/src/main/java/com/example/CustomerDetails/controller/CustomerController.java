@@ -5,13 +5,14 @@ import com.example.CustomerDetails.repository.CustomerRepository;
 import com.example.CustomerDetails.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import javax.validation.Valid;
 import java.io.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 @RestController
@@ -25,10 +26,22 @@ public class CustomerController {
     RestTemplate restTemplate;
 
     @PostMapping("/addCustomer")
-    public Customer addCustomer(@RequestBody Customer customer) {
-        String msg = "This method is used to add the Customer";
+    public ResponseEntity<?> createCustomer(@Valid @RequestBody Customer customer, BindingResult result) {
+        String msg = "This method is used to add a Customer" +
+                     "Before adding customer it will Validate the request body " +
+                     " if captured any input validation errors,send a response with the error messages in the response body";
         createFile(msg);
-        return service.saveCustomer(customer);
+        if (result.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            List<FieldError> fieldErrors = result.getFieldErrors();
+            for (FieldError fieldError : fieldErrors) {
+                errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+        }
+
+        Customer savedCustomer = repository.save(customer);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedCustomer);
     }
 
     @PostMapping("/addCustomers")
